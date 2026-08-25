@@ -1,0 +1,6 @@
+{
+  "name": "映視TV - YingShi.tv",
+  "description": "專為台灣與香港用戶打造的專業級暗黑風格影視串流平台，提供海量高清電影、電視劇、動漫、影評與精選專題。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
