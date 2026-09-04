@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Film, 
   Tv, 
@@ -55,6 +55,51 @@ import {
   parseIdFromSlug 
 } from './utils/seo';
 import { VideoItem, MainNavTab, ReviewItem, ShortClipItem, TopicCollection, FaqItem } from './types';
+
+// ==========================================
+// KODE KOMPONEN ADSTERRA BANNER
+// ==========================================
+function AdsterraBanner() {
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const scriptLoaded = useRef(false);
+
+  useEffect(() => {
+    if (scriptLoaded.current) return;
+    if (!bannerRef.current) return;
+
+    scriptLoaded.current = true;
+
+    try {
+      // Konfigurasi Adsterra atOptions (Ganti key dengan kode unit iklan Anda jika perlu)
+      const atOptions = {
+        'key': 'masukkan_key_adsterra_anda_disini',
+        'format': 'iframe',
+        'height': 50,
+        'width': 320,
+        'params': {}
+      };
+
+      const confScript = document.createElement('script');
+      confScript.innerHTML = `atOptions = ${JSON.stringify(atOptions)};`;
+
+      const invokeScript = document.createElement('script');
+      invokeScript.type = 'text/javascript';
+      invokeScript.src = '//www.highperformanceformat.com/' + atOptions.key + '/invoke.js';
+
+      bannerRef.current.innerHTML = '';
+      bannerRef.current.appendChild(confScript);
+      bannerRef.current.appendChild(invokeScript);
+    } catch (e) {
+      console.error('Adsterra load error:', e);
+    }
+  }, []);
+
+  return (
+    <div className="w-full flex justify-center items-center my-4 overflow-hidden">
+      <div ref={bannerRef} className="min-h-[50px] flex justify-center items-center bg-[#130f0d] border border-[#27201c] rounded-xl p-2" />
+    </div>
+  );
+}
 
 // Mock reviews data
 const MOCK_REVIEWS: ReviewItem[] = [
@@ -425,7 +470,7 @@ export default function App() {
       // Actor Deep-Link Match (Point 6)
       if (selectedActor) {
         const matchActor = video.cast.some(c => c.toLowerCase().includes(selectedActor.toLowerCase())) || 
-                           video.director.toLowerCase().includes(selectedActor.toLowerCase());
+                         video.director.toLowerCase().includes(selectedActor.toLowerCase());
         if (!matchActor) return false;
       }
 
@@ -521,6 +566,9 @@ export default function App() {
       {/* 2. Main Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 pb-16 space-y-8">
         
+        {/* Sisipan Iklan Adsterra di Bagian Atas / Bawah Header */}
+        <AdsterraBanner />
+
         {/* Detail View with Full SEO H1/H2 Hierarchy & Player (Points 1, 2, 4, 6) */}
         {activeVideo ? (
           <MovieDetailPage
@@ -685,6 +733,9 @@ export default function App() {
                   onToggleFavorite={toggleFavorite}
                 />
 
+                {/* Sisipan Iklan Adsterra di Tengah Konten */}
+                <AdsterraBanner />
+
                 {/* 2. Hot Drama Grid */}
                 <VideoGrid
                   title="華語與日韓劇集精選"
@@ -831,481 +882,16 @@ export default function App() {
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>
                   {currentTab === 'movie' && '全部電影大片庫'}
-                  {currentTab === 'drama' && '全球電視劇集庫'}
-                  {currentTab === 'hot' && '熱播高分推薦'}
-                  {currentTab === 'latest' && '最新上映作品'}
                 </span>
-                <span className="text-xs font-normal text-zinc-400">({filteredVideos.length} 部作品)</span>
               </h2>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-              {filteredVideos.map(video => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  onPlay={handlePlayVideo}
-                  isFavorited={isFavorited(video.id)}
-                  onToggleFavorite={toggleFavorite}
-                />
-              ))}
-            </div>
-          </div>
-        ) : currentTab === 'reviews' ? (
-          /* Reviews Tab */
-          <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="flex items-center justify-between border-b border-[#251e1a] pb-4">
-              <div>
-                <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-red-500" />
-                  最新深度影評與賞析
-                </h1>
-                <p className="text-xs text-zinc-400 mt-1">專業影評人與廣大影迷的獨家觀影視角</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {MOCK_REVIEWS.map(rev => (
-                <article
-                  key={rev.id}
-                  className="bg-[#14100e] border border-[#27201c] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={rev.authorAvatar}
-                        alt={rev.author}
-                        className="w-10 h-10 rounded-full object-cover border border-red-500/30"
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="text-sm font-bold text-white">{rev.author}</h4>
-                          {rev.isVerifiedCritic && (
-                            <span className="bg-red-600/20 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-red-500/30">
-                              認證影評人
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-zinc-500">{rev.date} · 發表於 映視TV 專欄</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="text-sm font-black text-amber-300">{rev.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="text-base sm:text-lg font-bold text-white hover:text-red-400 transition-colors">
-                      {rev.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                      {rev.content}
-                    </p>
-                  </div>
-
-                  {/* Movie Reference Bar */}
-                  <div className="flex items-center justify-between bg-[#1b1512] rounded-xl p-3 border border-[#2a211b]">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={rev.moviePoster}
-                        alt={rev.movieTitle}
-                        className="w-8 h-11 object-cover rounded"
-                      />
-                      <div>
-                        <h5 className="text-xs font-bold text-white">{rev.movieTitle} ({rev.movieYear})</h5>
-                        <p className="text-[10px] text-zinc-400">4K 藍光 / 粵語中字</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const target = MOCK_VIDEOS.find(v => v.id === rev.videoId) || MOCK_VIDEOS[0];
-                        handlePlayVideo(target);
-                      }}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-700 transition-colors"
-                    >
-                      <Play className="w-3 h-3 fill-white" /> 立即觀看
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-[#211a16]">
-                    <div className="flex items-center gap-4">
-                      <button className="flex items-center gap-1 hover:text-red-400 transition-colors">
-                        <ThumbsUp className="w-3.5 h-3.5" /> {rev.likes}
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-white transition-colors">
-                        <MessageSquare className="w-3.5 h-3.5" /> {rev.commentsCount} 條討論
-                      </button>
-                    </div>
-                    <button className="hover:text-white flex items-center gap-1">
-                      <Share2 className="w-3.5 h-3.5" /> 分享影評
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        ) : currentTab === 'shorts' ? (
-          /* Shorts Tab */
-          <div className="space-y-6">
-            <div className="border-b border-[#251e1a] pb-4">
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <Film className="w-5 h-5 text-red-500" />
-                精選影視短視頻與高光合輯
-              </h1>
-              <p className="text-xs text-zinc-400 mt-1">無廣告秒開 · 精彩片段速覽</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {MOCK_SHORTS.map(short => (
-                <div
-                  key={short.id}
-                  onClick={() => setSelectedShort(short)}
-                  className="group rounded-2xl overflow-hidden bg-[#14100e] border border-[#27201c] cursor-pointer hover:border-red-500/50 transition-all hover:-translate-y-1 shadow-lg"
-                >
-                  <div className="aspect-[9/16] relative bg-black max-h-[380px] overflow-hidden">
-                    <img
-                      src={short.coverUrl}
-                      alt={short.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-black/40" />
-                    
-                    <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {short.category}
-                    </span>
-
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                        <Play className="w-6 h-6 fill-white ml-0.5" />
-                      </div>
-                    </div>
-
-                    <div className="absolute bottom-3 inset-x-3 space-y-1">
-                      <p className="text-xs font-bold text-white line-clamp-2 drop-shadow">
-                        {short.title}
-                      </p>
-                      <div className="flex items-center justify-between text-[10px] text-zinc-300">
-                        <span>{short.relatedMovieTitle}</span>
-                        <span className="text-red-400 font-bold">{short.views}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : currentTab === 'topics' ? (
-          /* Topics Tab */
-          <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="border-b border-[#251e1a] pb-4">
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-red-500" />
-                影視專題特輯
-              </h1>
-              <p className="text-xs text-zinc-400 mt-1">主題策劃 · 經典系列回顧</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {MOCK_TOPICS.map(topic => (
-                <div
-                  key={topic.id}
-                  className="bg-[#14100e] border border-[#27201c] rounded-2xl overflow-hidden shadow-xl flex flex-col group hover:border-red-500/40 transition-all"
-                >
-                  <div className="aspect-[16/9] relative overflow-hidden bg-black">
-                    <img
-                      src={topic.bannerUrl}
-                      alt={topic.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#14100e] via-transparent to-black/50" />
-                    <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                      {topic.badge}
-                    </span>
-                    <span className="absolute bottom-3 left-3 text-xs text-zinc-300 font-medium">
-                      收錄 {topic.itemCount} 部精選作品
-                    </span>
-                  </div>
-
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">
-                        {topic.title}
-                      </h3>
-                      <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                        {topic.subtitle}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[#231c17]">
-                      {topic.tags.map(t => (
-                        <span key={t} className="text-[10px] bg-[#1d1714] text-zinc-400 px-2 py-0.5 rounded border border-[#2e241e]">
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setSelectedGenre('全部類型');
-                        setCurrentTab('movie');
-                      }}
-                      className="w-full py-2 bg-[#1c1613] hover:bg-red-600 text-white text-xs font-bold rounded-xl border border-[#30251f] hover:border-red-500 transition-colors text-center"
-                    >
-                      進入專題列表
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* FAQ Section */}
-            <div className="pt-10 border-t border-[#251e1a] space-y-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-red-500" />
-                常見問題與觀看指南 (FAQ)
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {MOCK_FAQS.map(faq => (
-                  <div key={faq.id} className="bg-[#14100e] border border-[#261f1a] rounded-xl p-4 space-y-2">
-                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5 text-red-400">
-                      Q: {faq.question}
-                    </h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed">
-                      {faq.answer}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         ) : null}
 
+        {/* Sisipan Iklan Adsterra di Bagian Bawah Halaman */}
+        <AdsterraBanner />
+
       </main>
-
-      {/* 3. Short Video Pop-up Modal */}
-      {selectedShort && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-sm bg-[#120e0c] border border-[#2e231d] rounded-2xl overflow-hidden shadow-2xl">
-            <button
-              onClick={() => setSelectedShort(null)}
-              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-black/70 hover:bg-red-600 text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="aspect-[9/16] bg-black relative">
-              <video
-                src={selectedShort.videoUrl}
-                controls
-                autoPlay
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="p-4 space-y-1">
-              <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-bold">
-                {selectedShort.category}
-              </span>
-              <h4 className="text-xs font-bold text-white pt-1">{selectedShort.title}</h4>
-              <p className="text-[10px] text-zinc-400">來源：《{selectedShort.relatedMovieTitle}》</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Favorites & History Drawer */}
-      {drawerOpen !== 'none' && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-md bg-[#130e0c] border-l border-[#2e241e] h-full flex flex-col p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[#28201a]">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setDrawerOpen('favorites')}
-                  className={`text-sm font-bold pb-1 transition-colors ${
-                    drawerOpen === 'favorites' ? 'text-red-500 border-b-2 border-red-500' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  我的收藏 ({favorites.length})
-                </button>
-                <button
-                  onClick={() => setDrawerOpen('history')}
-                  className={`text-sm font-bold pb-1 transition-colors ${
-                    drawerOpen === 'history' ? 'text-red-500 border-b-2 border-red-500' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  觀看記錄 ({history.length})
-                </button>
-              </div>
-              <button
-                onClick={() => setDrawerOpen('none')}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg bg-[#201814]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-4 space-y-3">
-              {drawerOpen === 'favorites' ? (
-                favorites.length > 0 ? (
-                  favorites.map(video => (
-                    <div
-                      key={video.id}
-                      className="flex items-center justify-between gap-3 bg-[#191310] border border-[#292019] p-2.5 rounded-xl group"
-                    >
-                      <div 
-                        onClick={() => {
-                          setDrawerOpen('none');
-                          handlePlayVideo(video);
-                        }}
-                        className="flex items-center gap-3 cursor-pointer flex-1"
-                      >
-                        <img
-                          src={video.posterUrl}
-                          alt={video.title}
-                          className="w-12 h-16 object-cover rounded"
-                        />
-                        <div>
-                          <h4 className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">
-                            {video.title}
-                          </h4>
-                          <span className="text-[10px] text-zinc-400">{video.year} · {video.quality}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleFavorite(video)}
-                        className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
-                        title="取消收藏"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-20 text-center text-zinc-500 text-xs">
-                    暫無收藏影片，點擊片單上的愛心或收藏按鈕即可加入！
-                  </div>
-                )
-              ) : (
-                history.length > 0 ? (
-                  history.map((h, i) => (
-                    <div
-                      key={i}
-                      onClick={() => {
-                        setDrawerOpen('none');
-                        handlePlayVideo(h.video, h.episode);
-                      }}
-                      className="flex items-center gap-3 bg-[#191310] border border-[#292019] p-2.5 rounded-xl cursor-pointer hover:border-red-500/40 group"
-                    >
-                      <img
-                        src={h.video.posterUrl}
-                        alt={h.video.title}
-                        className="w-12 h-16 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <h4 className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">
-                          {h.video.title}
-                        </h4>
-                        <p className="text-[10px] text-red-400">看到第 {h.episode} 集 · {h.watchedAt}</p>
-                      </div>
-                      <Play className="w-4 h-4 text-zinc-500 group-hover:text-white" />
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-20 text-center text-zinc-500 text-xs">
-                    暫無播放記錄，快去挑選一部好片觀看吧！
-                  </div>
-                )
-              )}
-            </div>
-
-            {((drawerOpen === 'favorites' && favorites.length > 0) || (drawerOpen === 'history' && history.length > 0)) && (
-              <button
-                onClick={() => {
-                  if (drawerOpen === 'favorites') setFavorites([]);
-                  if (drawerOpen === 'history') setHistory([]);
-                }}
-                className="w-full py-2 bg-[#1f1713] hover:bg-red-950 text-red-400 text-xs font-bold rounded-xl border border-[#352720] transition-colors"
-              >
-                清空{drawerOpen === 'favorites' ? '收藏清單' : '歷史記錄'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 6. Auth / User Sign-in Modal */}
-      {authModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-[#130f0d] border border-[#2e231e] rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-red-600 text-white font-black text-sm flex items-center justify-center">
-                  映
-                </div>
-                <h3 className="text-sm font-bold text-white">登錄 映視TV 帳戶</h3>
-              </div>
-              <button onClick={() => setAuthModalOpen(false)} className="text-zinc-400 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              登錄後可在不同設備（手機、平板、電腦、電視端）同步收藏清單與播放進度。
-            </p>
-
-            <form onSubmit={(e) => { e.preventDefault(); setAuthModalOpen(false); alert('登錄成功！'); }} className="space-y-3">
-              <input
-                type="email"
-                required
-                placeholder="請輸入註冊郵箱 / 用戶名"
-                className="w-full bg-[#1b1512] border border-[#2e231d] rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-red-500"
-              />
-              <input
-                type="password"
-                required
-                placeholder="請輸入密碼"
-                className="w-full bg-[#1b1512] border border-[#2e231d] rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-red-500"
-              />
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors"
-              >
-                立即登錄
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 7. Footer */}
-      <footer className="w-full border-t border-[#221b16] bg-[#090807] py-10 px-4 sm:px-8 mt-auto text-xs text-zinc-500">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-md">
-                映
-              </div>
-              <span className="text-sm font-bold text-white tracking-wider">映視TV · YINGSHI.TV</span>
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
-              <span className="hover:text-white cursor-pointer">免責聲明 (DMCA)</span>
-              <span className="hover:text-white cursor-pointer">用戶協議</span>
-              <span className="hover:text-white cursor-pointer">隱私政策</span>
-              <span className="hover:text-white cursor-pointer">聯絡我們</span>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-zinc-600 leading-relaxed border-t border-[#1a1411] pt-4">
-            本網站僅提供線上影視索引與展示技術測試，所有視頻內容均由第三方 CDN 網路爬蟲收集與聚合，伺服器不保存任何影音檔案。若有侵犯您的權益，請發送郵件通知我們及時移除相關連結。
-          </p>
-
-          <div className="flex items-center justify-between text-[10px] text-zinc-600 pt-2">
-            <span>© 2026 映視TV (YingShi.TV) · 保留所有權利</span>
-            <span>Ultra Fast CDN Cluster Active</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
