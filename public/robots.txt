@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yingshitv.up.railway.app/sitemap.xml
